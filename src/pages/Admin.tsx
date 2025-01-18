@@ -61,7 +61,7 @@ const Admin = ({ db }: UserPanelProps) => {
 
         if (matchesDocSnap.exists()) {
           const matchesData = matchesDocSnap.data();
-          const matchList = Object.keys(matchesData).map(id => ({
+          let matchList = Object.keys(matchesData).map(id => ({
             matchId: matchesData[id].matchId,
             team1Id: matchesData[id].team1Id,
             team2Id: matchesData[id].team2Id,
@@ -71,6 +71,8 @@ const Admin = ({ db }: UserPanelProps) => {
             open: matchesData[id].open,
             winner: matchesData[id].winner,
           }));
+          matchList = matchList.sort((a, b) => a.closeTime.seconds - b.closeTime.seconds);
+
           setMatches(matchList);
         }
         

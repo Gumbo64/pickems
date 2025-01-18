@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { getAuth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, User  } from "firebase/auth";
 import { useNavigate, Link } from "react-router-dom";
-import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { getFirestore, doc, setDoc, getDoc, Timestamp  } from "firebase/firestore";
 const auth = getAuth();
+const db = getFirestore();
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -26,28 +27,35 @@ const Login = () => {
     const provider = new GoogleAuthProvider();
   
     signInWithPopup(auth, provider)
-      .then((result) => {
+      .then(async (result) => {
         // This gives you a Google Access Token. You can use it to access the Google API.
         const credential = GoogleAuthProvider.credentialFromResult(result);
         if (credential === null) {
-          throw new Error('Google Auth Error');
+          setError("Google Auth Error");
         }
-        const token = credential.accessToken;
-        // The signed-in user info.
-        const user = result.user;
-        // IdP data available using getAdditionalUserInfo(result)
-        // ...
-        console.log([token, user]);
+        
+        const user = auth.currentUser as User;
+        console.log([user, result])
+        const userRef = doc(db, "users", user.uid);
+        const userDoc = await getDoc(userRef);
+        if (userDoc.exists()) {
+          console.log("User already exists in Firestore");
+        } else {
+          await setDoc(userRef, {
+            email: user.email,
+            name: user.displayName,
+            picks: {},
+            score: 0,
+            rank: -1, // Default rank is nothing until first pickem
+            lastEdited: Timestamp.now()
+          });
+          console.log("User added to Firestore");
+        }
+      
+
+        // navigate("/user");
       }).catch((error) => {
-        // Handle Errors here.
-        const errorCode = error.code;
-        const errorMessage = error.message;
-        // The email of the user's account used.
-        const email = error.customData.email;
-        // The AuthCredential type that was used.
-        const credential = GoogleAuthProvider.credentialFromError(error);
-        console.log([errorCode, errorMessage, email, credential]);
-        // ...
+        setError(error.message);
       });
     };
 
